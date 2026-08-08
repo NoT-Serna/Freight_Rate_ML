@@ -1,12 +1,3 @@
-"""
-Feature engineering for freight rate prediction.
-
-Design principle: this module must run identically over
-train_test.csv, validation.csv, and december_chart_inputs.csv.
-No fitting decisions should be made on validation data — any
-statistic used to impute or scale (e.g. medians) is computed on
-TRAIN ONLY and passed in / reused at predict time.
-"""
 
 from __future__ import annotations
 import numpy as np
@@ -29,19 +20,12 @@ def fit_clean_stats(train_df: pd.DataFrame) -> dict:
 def clean(df: pd.DataFrame, stats: dict) -> pd.DataFrame:
     df = df.copy()
 
-    # december_chart_inputs.csv doesn't have these columns at all (it's a
-    # fixed-lane probe of the time trend, not a real market observation).
-    # Add them filled with the TRAIN median so the feature matrix lines up;
-    # the effect of these two columns on that file's predictions is then
-    # just the model's baseline/average response to them.
     for col, stat_key in [("market_index", "market_index_median"),
                            ("quote_signal", "quote_signal_median")]:
         if col not in df.columns:
             df[col] = stats[stat_key]
 
-    # Negative weight is a data-entry sign error, not a valid observation —
-    # take the absolute value rather than dropping (we can't drop from
-    # validation/december, and abs() preserves the shipment's magnitude).
+
     df["weight"] = df["weight"].abs()
 
     # Fill remaining missing weight / market_index with the TRAIN median.
@@ -87,11 +71,6 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # --- Deliberately NOT used as model inputs ---
     # pickup / delivery / pickup_lat / pickup_lon / delivery_lat / delivery_lon:
-    # validation has cities unseen in training, so any city-identity feature
-    # (one-hot, target-encoded lane average, or raw lat/lon which is really
-    # just a proxy for city identity on this synthetic map) would be undefined
-    # for those rows. `distance` already captures the geographic driver in a
-    # way that generalizes to unseen city pairs.
 
     return df
 
@@ -107,9 +86,6 @@ def prepare(df: pd.DataFrame, stats: dict) -> pd.DataFrame:
     """One call to go from raw CSV columns to model-ready feature matrix."""
     df = clean(df, stats)
     df = engineer_features(df)
-    # Ensure all expected dummy columns exist even if a category is
-    # absent from this particular slice (e.g. december inputs are all
-    # Dry Van, so equip_Flatbed/equip_Reefer must still be added as 0).
     for col in FEATURE_COLUMNS:
         if col not in df.columns:
             df[col] = 0
