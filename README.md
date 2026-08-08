@@ -1,25 +1,13 @@
 # Freight Rate Prediction Challenge
+## Reproducing this solution
 
-See `Freight_Rate_ML_Assessment.pdf` for the assessment instructions.
-
-## What to do
-
-1. Train and validate your model using `data/train_test.csv`.
-2. Predict every load in `data/validation.csv`. Each load has a unique `load_id`.
-3. Fill the matching `predicted_rate` values in `data/validation_predictions_template.csv` and save it as `validation_predictions.csv`.
-4. Predict every row in `data/december_chart_inputs.csv` by filling its `predicted_rate` column.
-5. Install the scorer requirements and run:
-
-```bash
-python -m pip install -r requirements.txt
-python score.py --predictions validation_predictions.csv --december-predictions data/december_chart_inputs.csv
-```
-
-The scorer validates both files and creates `scorer_results/candidate_december.png`.
-
-## Submit
-
-- GitHub repository containing your code, dependencies, and run instructions
-- `validation_predictions.csv`
-- PDF or DOCX report containing your validation, data split approach and `candidate_december.png`
-- 2-3 minute Loom link
+1. `pip install -r requirements.txt`
+2. Open `Analysis.ipynb` and run all cells top to bottom. This will:
+   - Explore and clean `data/train_test.csv`
+   - Engineer features (`src/features.py`)
+   - Time-split into Jan–Aug train / Sep–Oct holdout and compare
+     Linear Regression vs. Gradient Boosting
+   - Fit the final model on the full labeled set
+   - Write `validation_predictions.csv` and fill `data/december_chart_inputs.csv`
+3. Run the scorer to validate outputs and produce the chart:
+   `python score.py --predictions validation_predictions.csv --december-predictions data/december_chart_inputs.csv`
