@@ -22,11 +22,22 @@ def fit_clean_stats(train_df: pd.DataFrame) -> dict:
     return {
         "weight_median": train_df.loc[train_df["weight"] >= 0, "weight"].median(),
         "market_index_median": train_df["market_index"].median(),
+        "quote_signal_median": train_df["quote_signal"].median(),
     }
 
 
 def clean(df: pd.DataFrame, stats: dict) -> pd.DataFrame:
     df = df.copy()
+
+    # december_chart_inputs.csv doesn't have these columns at all (it's a
+    # fixed-lane probe of the time trend, not a real market observation).
+    # Add them filled with the TRAIN median so the feature matrix lines up;
+    # the effect of these two columns on that file's predictions is then
+    # just the model's baseline/average response to them.
+    for col, stat_key in [("market_index", "market_index_median"),
+                           ("quote_signal", "quote_signal_median")]:
+        if col not in df.columns:
+            df[col] = stats[stat_key]
 
     # Negative weight is a data-entry sign error, not a valid observation —
     # take the absolute value rather than dropping (we can't drop from
@@ -36,6 +47,7 @@ def clean(df: pd.DataFrame, stats: dict) -> pd.DataFrame:
     # Fill remaining missing weight / market_index with the TRAIN median.
     df["weight"] = df["weight"].fillna(stats["weight_median"])
     df["market_index"] = df["market_index"].fillna(stats["market_index_median"])
+    df["quote_signal"] = df["quote_signal"].fillna(stats["quote_signal_median"])
 
     return df
 
